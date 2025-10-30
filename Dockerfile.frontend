@@ -1,15 +1,17 @@
 FROM node:20-slim AS builder
-   WORKDIR /app
-   COPY ./frontend/package*.json ./
-   RUN npm ci
-   COPY ./frontend ./
-   RUN npm run build
+WORKDIR /app
+COPY ./frontend/package*.json ./
+RUN npm ci
+COPY ./frontend ./
+ENV NEXT_OUTPUT_MODE=standalone
+RUN npm run build
 
-   FROM node:20-slim AS runtime
-   WORKDIR /app
-   COPY --from=builder /app/.next/standalone ./
-   COPY --from=builder /app/.next/static ./.next/static
-   COPY --from=builder /app/public ./public
-   EXPOSE 8502
-   ENV API_URL=${API_URL:-http://localhost:5055}
-   CMD ["node", "server.js"]
+FROM node:20-slim AS runtime
+WORKDIR /app
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+EXPOSE 8502
+ENV API_URL=${API_URL:-http://localhost:5055}
+ENV PORT=8502
+CMD ["node", "server.js"]
