@@ -1,0 +1,19 @@
+name: open-notebook
+services:
+  - name: frontend
+    build:
+      dockerfile_path: Dockerfile
+      context: .
+    http_port: 8502
+    envs:
+      - key: API_URL
+        value: ${backend.PUBLIC_URL}:5055
+
+  - name: backend
+    build:
+      dockerfile_path: Dockerfile
+      context: .
+    http_port: 5055
+    envs:
+      - key: OPENAI_API_KEY
+        scope: RUN_TIME
