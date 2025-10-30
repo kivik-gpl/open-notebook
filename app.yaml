@@ -1,19 +1,33 @@
 name: open-notebook
 services:
   - name: frontend
+    github:
+      repo: kivik-gpl/open-notebook
+      branch: main
     build:
-      dockerfile_path: Dockerfile
-      context: .
+      dockerfile_path: Dockerfile.frontend
     http_port: 8502
     envs:
       - key: API_URL
-        value: ${backend.PUBLIC_URL}:5055
+        value: https://${backend.PUBLIC_URL}
 
   - name: backend
+    github:
+      repo: kivik-gpl/open-notebook
+      branch: main
     build:
-      dockerfile_path: Dockerfile
-      context: .
+      dockerfile_path: Dockerfile.backend
     http_port: 5055
     envs:
       - key: OPENAI_API_KEY
         scope: RUN_TIME
+      - key: SURREAL_URL
+        value: ws://localhost:8000/rpc
+      - key: SURREAL_USER
+        value: root
+      - key: SURREAL_PASSWORD
+        scope: RUN_TIME
+      - key: SURREAL_NAMESPACE
+        value: open_notebook
+      - key: SURREAL_DATABASE
+        value: production
