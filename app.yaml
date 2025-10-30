@@ -17,4 +17,4 @@ services:
       branch: main
     dockerfile_path: Dockerfile.backend
     http_port: 5055
-    env_file: /Docker.env
+    env_file: ./Docker.env
