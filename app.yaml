@@ -11,7 +11,7 @@ services:
         value: http://${backend.PRIVATE_URL}:5055
       - key: API_URL
         value: https://${backend.PUBLIC_URL}
-  - name: backend
+  - name: backend    # ← Same indentation level as frontend
     github:
       repo: kivik-gpl/open-notebook
       branch: main
