@@ -17,16 +17,4 @@ services:
       branch: main
     dockerfile_path: Dockerfile.backend
     http_port: 5055
-    envs:
-      - key: OPENAI_API_KEY
-        type: SECRET
-      - key: SURREAL_URL
-        value: ws://localhost:8000/rpc
-      - key: SURREAL_USER
-        value: root
-      - key: SURREAL_PASSWORD
-        type: SECRET
-      - key: SURREAL_NAMESPACE
-        value: open_notebook
-      - key: SURREAL_DATABASE
-        value: production
+    env_file: /Docker.env
