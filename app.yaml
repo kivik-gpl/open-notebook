@@ -1,16 +1,5 @@
 name: open-notebook
 services:
-  - name: frontend
-    github:
-      repo: kivik-gpl/open-notebook
-      branch: main
-    dockerfile_path: Dockerfile.frontend
-    http_port: 8502
-    envs:
-      - key: INTERNAL_API_URL
-        value: http://${backend.PRIVATE_URL}:5055
-      - key: API_URL
-        value: https://${backend.PUBLIC_URL}
   - name: backend    # ← Same indentation level as frontend
     github:
       repo: kivik-gpl/open-notebook
@@ -18,3 +7,47 @@ services:
     dockerfile_path: Dockerfile.backend
     http_port: 5055
     env_file: ./Docker.env
+
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 30
+      period_seconds: 10
+    
+    # Persistent storage for data and database
+    volumes:
+      - name: notebook-data
+        mount_path: /app/data
+      - name: surreal-data
+        mount_path: /mydata
+
+  # Frontend Service
+  - name: frontend
+    github:
+      repo: kivik-gpl/open-notebook
+      branch: main
+    dockerfile_path: ./Dockerfile.frontend
+    http_port: 8502
+    envs:
+      # Internal communication (backend to backend)
+      - key: INTERNAL_API_URL
+        value: http://backend:5055
+      
+      # External API URL (will be replaced with actual URL at runtime)
+      # Use the platform's variable substitution for the backend public URL
+      - key: API_URL
+        scope: RUN_TIME
+        value: https://${backend.PUBLIC_URL}
+      
+      # Build-time API URL for Next.js
+      - key: NEXT_PUBLIC_API_URL
+        scope: BUILD_TIME
+        value: http://backend:5055
+    
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+      period_seconds: 10
+    
+    # Frontend depends on backend being ready
+    depends_on:
+      - backend
