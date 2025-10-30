@@ -1,22 +1,23 @@
 name: open-notebook
 services:
   - name: frontend
-    github:
-      repo: kivik-gpl/open-notebook
-      branch: main
-    dockerfile_path: Dockerfile.frontend
+    image:
+      registry_type: GHCR
+      registry: ghcr.io/kivik-gpl
+      repository: open-notebook/frontend
+      tag: latest
     http_port: 8502
     envs:
       - key: INTERNAL_API_URL
         value: http://${backend.PRIVATE_URL}:5055
       - key: API_URL
         value: https://${backend.PUBLIC_URL}
-
   - name: backend
-    github:
-      repo: kivik-gpl/open-notebook
-      branch: main
-    dockerfile_path: Dockerfile.backend
+    image:
+      registry_type: GHCR
+      registry: ghcr.io/kivik-gpl
+      repository: open-notebook/backend
+      tag: latest
     http_port: 5055
     envs:
       - key: OPENAI_API_KEY
