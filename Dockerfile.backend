@@ -11,32 +11,53 @@ WORKDIR /app
 # Copy everything
 COPY . /app
 
-# Install Python dependencies
-RUN pip install fastapi uvicorn surrealdb loguru pydantic python-dotenv
+# Install Python dependencies - try multiple approaches
+RUN pip install --no-cache-dir fastapi uvicorn surrealdb loguru pydantic python-dotenv || \
+    (if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi) || \
+    (if [ -f pyproject.toml ]; then pip install --no-cache-dir .; fi)
 
 # Create directories
 RUN mkdir -p /app/data /mydata /var/log/supervisor
 
-# Create supervisord config with hardcoded password (since it's local memory DB)
+# Create a startup script to debug issues
+RUN echo '#!/bin/bash\n\
+echo "Starting SurrealDB..."\n\
+/usr/local/bin/surreal start --log info --user root --pass root memory &\n\
+sleep 5\n\
+echo "Starting API..."\n\
+cd /app\n\
+python -m uvicorn api.main:app --host 0.0.0.0 --port 5055' > /app/start.sh && \
+chmod +x /app/start.sh
+
+# Create supervisord config with better logging
 RUN echo '[supervisord]\n\
 nodaemon=true\n\
+user=root\n\
 \n\
 [program:surrealdb]\n\
 command=/usr/local/bin/surreal start --log info --user root --pass root memory\n\
 autostart=true\n\
 autorestart=true\n\
-redirect_stderr=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
 \n\
 [program:api]\n\
-command=uvicorn api.main:app --host 0.0.0.0 --port 5055\n\
+command=python -m uvicorn api.main:app --host 0.0.0.0 --port 5055\n\
+directory=/app\n\
 autostart=true\n\
 autorestart=true\n\
-redirect_stderr=true\n\
-startsecs=5' > /etc/supervisor/conf.d/supervisord.conf
+startsecs=10\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0' > /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 5055
 
-# Set the SurrealDB connection for the API
+# Set environment variables
+ENV PYTHONPATH=/app
 ENV SURREAL_URL=ws://localhost:8000/rpc
 ENV SURREAL_USER=root
 ENV SURREAL_PASSWORD=root
