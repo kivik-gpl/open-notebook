@@ -11,26 +11,34 @@ WORKDIR /app
 # Copy everything
 COPY . /app
 
-# Install Python dependencies with pip
-RUN pip install -r requirements.txt || pip install fastapi uvicorn surrealdb loguru
+# Install Python dependencies
+RUN pip install fastapi uvicorn surrealdb loguru pydantic python-dotenv
 
 # Create directories
 RUN mkdir -p /app/data /mydata /var/log/supervisor
 
-# Create supervisord config
+# Create supervisord config with hardcoded password (since it's local memory DB)
 RUN echo '[supervisord]\n\
 nodaemon=true\n\
 \n\
 [program:surrealdb]\n\
-command=/usr/local/bin/surreal start --log info --user root --pass %(ENV_SURREAL_PASSWORD)s memory\n\
+command=/usr/local/bin/surreal start --log info --user root --pass root memory\n\
 autostart=true\n\
 autorestart=true\n\
+redirect_stderr=true\n\
 \n\
 [program:api]\n\
 command=uvicorn api.main:app --host 0.0.0.0 --port 5055\n\
 autostart=true\n\
 autorestart=true\n\
+redirect_stderr=true\n\
 startsecs=5' > /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 5055
+
+# Set the SurrealDB connection for the API
+ENV SURREAL_URL=ws://localhost:8000/rpc
+ENV SURREAL_USER=root
+ENV SURREAL_PASSWORD=root
+
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
